@@ -1,3 +1,11 @@
+// steamserverinfo.go
+// https://github.com/wriley/steamserverinfo
+//
+// A server query program written in golang that uses the Steam Server Query API
+// https://developer.valvesoftware.com/wiki/Server_queries
+//
+// Ported from original C version found here https://github.com/wriley/arma2serverinfo
+
 package main
 
 import (
@@ -54,7 +62,6 @@ func GetString(arr []byte, index int) (string, int) {
 }
 
 func main() {
-
 	A2S_INFO := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00}
     A2S_RULES := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x56, 0xFF, 0xFF, 0xFF, 0xFF}
     A2S_PLAYER := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF}
@@ -70,7 +77,7 @@ func main() {
     seconds := 5
     timeout := time.Duration(seconds) * time.Second
 
-    fmt.Fprintln(os.Stderr, "Dialing...")
+    fmt.Fprintln(os.Stderr, "Opening UDP connection...")
 	Conn, err := net.DialTimeout("udp", server+":"+port, timeout)
 	if !CheckError(err) {
         os.Exit(2)
@@ -80,7 +87,7 @@ func main() {
     
     // Get Info
 
-    fmt.Fprintln(os.Stderr, "Sending...")
+    fmt.Fprintln(os.Stderr, "Sending A2S_INFO...")
 	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)	
     
     if BytesReceived == nil || n == 0 {
@@ -170,7 +177,7 @@ func main() {
     // Get Rules
     sPtr = 5
     
-    fmt.Fprintln(os.Stderr, "Sending...")
+    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)	
     
     if BytesReceived == nil || n == 0 {
@@ -200,7 +207,7 @@ func main() {
     A2S_RULES[7] = byte(chnum >> 16)
     A2S_RULES[8] = byte(chnum >> 24)
     
-    fmt.Fprintln(os.Stderr, "Sending...")
+    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)	
     
     if BytesReceived == nil || n == 0 {
@@ -239,7 +246,7 @@ func main() {
     // Get Players
     sPtr = 5
     
-    fmt.Fprintln(os.Stderr, "Sending...")
+    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)	
     
     if BytesReceived == nil || n == 0 {
@@ -269,7 +276,7 @@ func main() {
     A2S_PLAYER[7] = byte(chnum >> 16)
     A2S_PLAYER[8] = byte(chnum >> 24)
     
-    fmt.Fprintln(os.Stderr, "Sending...")
+    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)	
     
     if BytesReceived == nil || n == 0 {
