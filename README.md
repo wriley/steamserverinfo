@@ -2,23 +2,23 @@
 
 A server query program written in [golang](https://golang.org/) that uses the [Steam Server Query API](https://developer.valvesoftware.com/wiki/Server_queries)
 
-#### Example Usage
+## Example Usage
 
-DayZ server
+### DayZ server
 ```
 $ ./steamserverinfo 184.172.24.19 2512 2>/dev/null | grep PLAYERS:
 PLAYERS: 50
 MAXPLAYERS: 50
 ```
 
-Miscreated server
+### Miscreated server
 ```
 $ ./steamserverinfo 91.198.152.238 64092 2>/dev/null | grep PLAYERS:
 PLAYERS: 22
 MAXPLAYERS: 36
 ```
 
-Full output from a DayZ server
+### Full output from a DayZ server
 ```
 $ ./steamserverinfo 184.172.24.19 2512
 Opening UDP connection...
