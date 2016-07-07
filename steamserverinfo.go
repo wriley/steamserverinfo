@@ -43,7 +43,7 @@ func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) 
     } else {
         return 0, nil
     }
-    
+
 }
 
 func GetString(arr []byte, index int) (string, int) {
@@ -84,69 +84,69 @@ func main() {
     }
 
 	defer Conn.Close()
-    
+
     // Get Info
 
     fmt.Fprintln(os.Stderr, "Sending A2S_INFO...")
-	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)	
-    
+	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)
+
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
-    
+
     if BytesReceived[4] != 0x49 {
         fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x49\n", BytesReceived[4])
         os.Exit(2)
     }
-    
+
     fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4])
     fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5])
-    
+
     sPtr := 5
     info, sPtr := GetString(BytesReceived, sPtr)
     fmt.Printf("NAME: %s\n", info)
-    
+
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("MAP: %s\n", info)
-    
+
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("FOLDER: %s\n", info)
-    
+
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("GAME: %s\n", info)
-    
+
     id1 := BytesReceived[sPtr]
     sPtr++
     id2 := BytesReceived[sPtr]
     sPtr++
     id :=  uint16(id1) | uint16(id2)<<8
     fmt.Printf("ID: %d\n", id)
-    
+
     fmt.Printf("PLAYERS: %d\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("MAXPLAYERS: %d\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("BOTS: %d\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("SERVERTYPE: %c\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("ENVIRONMENT: %c\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("VISIBILITY: %d\n", BytesReceived[sPtr])
     sPtr++
-    
+
     fmt.Printf("VAC: %d\n", BytesReceived[sPtr])
     sPtr++
-    
+
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("VERSION: %s\n", info)
-    
+
     if n > sPtr {
         // EDF
         edf := BytesReceived[sPtr]
@@ -173,23 +173,23 @@ func main() {
             fmt.Printf("KEYWORDS: %s\n", info)
         }
     }
-    
+
     // Get Rules
     sPtr = 5
-    
+
     fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
-	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)	
-    
+	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
+
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
-    
+
     if BytesReceived[4] != 0x41 {
         fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x41\n", BytesReceived[4])
         os.Exit(2)
     }
-    
+
     // Challenge number
     i1 := BytesReceived[sPtr]
     sPtr++
@@ -201,34 +201,34 @@ func main() {
     sPtr++
     chnum := uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
     fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
-    
+
     A2S_RULES[5] = byte(chnum)
     A2S_RULES[6] = byte(chnum >> 8)
     A2S_RULES[7] = byte(chnum >> 16)
     A2S_RULES[8] = byte(chnum >> 24)
-    
+
     fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
-	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)	
-    
+	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
+
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
-    
+
     if BytesReceived[4] != 0x45 {
         fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x45\n", BytesReceived[4])
         os.Exit(2)
     }
-    
+
     // reset sPtr
     sPtr = 5
-    
+
     s1 := BytesReceived[sPtr]
     sPtr++
     s2 := BytesReceived[sPtr]
     sPtr++
     rules := uint16(s1) | uint16(s2)<<8
-    
+
     if(rules > 0) {
         fmt.Println("RULE LIST:")
     }
@@ -239,26 +239,26 @@ func main() {
         // Value
         val := ""
         val, sPtr = GetString(BytesReceived, sPtr)
- 
+
         fmt.Printf("%s %s\n", info, val)
     }
 
     // Get Players
     sPtr = 5
-    
+
     fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
-	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)	
-    
+	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
+
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
-    
+
     if BytesReceived[4] != 0x41 {
         fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x41\n", BytesReceived[4])
         os.Exit(2)
     }
-    
+
     // Challenge number
     i1 = BytesReceived[sPtr]
     sPtr++
@@ -270,29 +270,29 @@ func main() {
     sPtr++
     chnum = uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
     fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
-    
+
     A2S_PLAYER[5] = byte(chnum)
     A2S_PLAYER[6] = byte(chnum >> 8)
     A2S_PLAYER[7] = byte(chnum >> 16)
     A2S_PLAYER[8] = byte(chnum >> 24)
-    
+
     fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
-	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)	
-    
+	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
+
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
-    
+
     if BytesReceived[4] != 0x44 {
         fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x44\n", BytesReceived[4])
         os.Exit(2)
     }
-    
+
     sPtr = 5
     players := BytesReceived[sPtr]
     sPtr++
-    
+
     if players > 0 {
         fmt.Println("PLAYER LIST:");
     }
@@ -300,10 +300,10 @@ func main() {
     for i := 0; i < int(players); i++ {
         // Index (this seems to always be 0, so skipping it)
         sPtr++
-        
+
         // Name
         info, sPtr = GetString(BytesReceived, sPtr)
-        
+
         // Score
         i1 = BytesReceived[sPtr]
         sPtr++
@@ -314,7 +314,7 @@ func main() {
         i4 = BytesReceived[sPtr]
         sPtr++
         score := uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
-        
+
         // Duration
         b := []byte{0x00, 0x00, 0x00, 0x00}
         b[0] = BytesReceived[sPtr]
@@ -331,7 +331,7 @@ func main() {
         if err != nil {
             fmt.Fprintln(os.Stderr, "Float conversion failed:", err)
         }
-        
+
         fmt.Printf("%s %d %.0f\n", info, score, duration)
     }
 }
