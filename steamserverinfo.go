@@ -12,10 +12,13 @@ import (
 	"fmt"
 	"net"
 	"os"
-    "time"
-    "encoding/binary"
-    "bytes"
+	"time"
+	"encoding/binary"
+	"bytes"
+	"path/filepath"
 )
+
+var debug bool = false
 
 func CheckError(err error) bool {
 	if err != nil {
@@ -27,12 +30,12 @@ func CheckError(err error) bool {
 }
 
 func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) {
-    fmt.Fprintln(os.Stderr, "Writing...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Writing...") }
     ret, err := conn.Write(arr)
     if CheckError(err) {
-        fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret)
+        if(debug) {	fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret) }
         buffer := make([]byte, 1024)
-        fmt.Fprintln(os.Stderr, "Reading...")
+        if(debug) {	fmt.Fprintln(os.Stderr, "Reading...") }
         conn.SetReadDeadline(time.Now().Add(timeout))
         n, err := conn.Read(buffer)
         if CheckError(err) {
@@ -67,17 +70,20 @@ func main() {
     A2S_PLAYER := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF}
 
 	argsWithProg := os.Args
-	if len(argsWithProg) != 3 {
-		fmt.Printf("Usage: %s <server> <port>\n", argsWithProg[0])
+	if len(argsWithProg) < 3 {
+		fmt.Printf("Usage: %s <server> <port>\n", filepath.Base(argsWithProg[0]))
 		os.Exit(1)
 	}
 
 	server := argsWithProg[1]
 	port := argsWithProg[2]
+	if len(argsWithProg) == 4 {
+		debug = true
+	}
     seconds := 5
     timeout := time.Duration(seconds) * time.Second
 
-    fmt.Fprintln(os.Stderr, "Opening UDP connection...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Opening UDP connection...") }
 	Conn, err := net.DialTimeout("udp", server+":"+port, timeout)
 	if !CheckError(err) {
         os.Exit(2)
@@ -87,7 +93,7 @@ func main() {
 
     // Get Info
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_INFO...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_INFO...") }
 	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -100,8 +106,8 @@ func main() {
         os.Exit(2)
     }
 
-    fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4])
-    fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5])
+    if(debug) {	fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4]) }
+    if(debug) {	fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5]) }
 
     sPtr := 5
     info, sPtr := GetString(BytesReceived, sPtr)
@@ -177,7 +183,7 @@ func main() {
     // Get Rules
     sPtr = 5
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -200,14 +206,14 @@ func main() {
     i4 := BytesReceived[sPtr]
     sPtr++
     chnum := uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
-    fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
+    if(debug) {	fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum) }
 
     A2S_RULES[5] = byte(chnum)
     A2S_RULES[6] = byte(chnum >> 8)
     A2S_RULES[7] = byte(chnum >> 16)
     A2S_RULES[8] = byte(chnum >> 24)
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -246,7 +252,7 @@ func main() {
     // Get Players
     sPtr = 5
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...") }
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -269,14 +275,14 @@ func main() {
     i4 = BytesReceived[sPtr]
     sPtr++
     chnum = uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
-    fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
+    if(debug) {	fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum) }
 
     A2S_PLAYER[5] = byte(chnum)
     A2S_PLAYER[6] = byte(chnum >> 8)
     A2S_PLAYER[7] = byte(chnum >> 16)
     A2S_PLAYER[8] = byte(chnum >> 24)
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...") }
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
 
     if BytesReceived == nil || n == 0 {
