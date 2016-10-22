@@ -12,10 +12,13 @@ import (
 	"fmt"
 	"net"
 	"os"
-    "time"
-    "encoding/binary"
-    "bytes"
+	"time"
+	"encoding/binary"
+	"bytes"
+	"path/filepath"
 )
+
+var debug bool = false
 
 func CheckError(err error) bool {
 	if err != nil {
@@ -27,12 +30,12 @@ func CheckError(err error) bool {
 }
 
 func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) {
-    fmt.Fprintln(os.Stderr, "Writing...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Writing...") }
     ret, err := conn.Write(arr)
     if CheckError(err) {
-        fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret)
+        if(debug) {	fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret) }
         buffer := make([]byte, 1024)
-        fmt.Fprintln(os.Stderr, "Reading...")
+        if(debug) {	fmt.Fprintln(os.Stderr, "Reading...") }
         conn.SetReadDeadline(time.Now().Add(timeout))
         n, err := conn.Read(buffer)
         if CheckError(err) {
@@ -46,6 +49,19 @@ func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) 
 
 }
 
+func stripCtlAndExtFromBytes(str string) string {
+	b := make([]byte, len(str))
+	var bl int
+	for i := 0; i < len(str); i++ {
+		c := str[i]
+		if c >= 32 && c < 127 {
+			b[bl] = c
+			bl++
+		}
+	}
+	return string(b[:bl])
+}
+
 func GetString(arr []byte, index int) (string, int) {
     data := ""
     for i := index; i < len(arr); i++ {
@@ -57,8 +73,31 @@ func GetString(arr []byte, index int) (string, int) {
         }
     }
     index++
-
+//	data = fmt.Sprintf("%q", data)
+	data = stripCtlAndExtFromBytes(data)
     return data, index
+}
+
+func GetUInt16(arr []byte, index int) (uint16, int) {
+    num1 := arr[index]
+    index++
+    num2 := arr[index]
+    index++
+    num :=  uint16(num1) | uint16(num2)<<8
+    return num, index
+}
+
+func GetUInt32(arr []byte, index int) (uint32, int) {
+    num1 := arr[index]
+    index++
+    num2 := arr[index]
+    index++
+    num3 := arr[index]
+    index++
+    num4 := arr[index]
+    index++
+    num := uint32(num4)<<24 | uint32(num3)<<16 | uint32(num2)<<8 | uint32(num1)
+    return num, index
 }
 
 func main() {
@@ -67,17 +106,20 @@ func main() {
     A2S_PLAYER := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF}
 
 	argsWithProg := os.Args
-	if len(argsWithProg) != 3 {
-		fmt.Printf("Usage: %s <server> <port>\n", argsWithProg[0])
+	if len(argsWithProg) < 3 {
+		fmt.Printf("Usage: %s <server> <port>\n", filepath.Base(argsWithProg[0]))
 		os.Exit(1)
 	}
 
 	server := argsWithProg[1]
 	port := argsWithProg[2]
+	if len(argsWithProg) == 4 {
+		debug = true
+	}
     seconds := 5
     timeout := time.Duration(seconds) * time.Second
 
-    fmt.Fprintln(os.Stderr, "Opening UDP connection...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Opening UDP connection...") }
 	Conn, err := net.DialTimeout("udp", server+":"+port, timeout)
 	if !CheckError(err) {
         os.Exit(2)
@@ -87,7 +129,7 @@ func main() {
 
     // Get Info
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_INFO...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_INFO...") }
 	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -100,8 +142,8 @@ func main() {
         os.Exit(2)
     }
 
-    fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4])
-    fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5])
+    if(debug) {	fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4]) }
+    if(debug) {	fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5]) }
 
     sPtr := 5
     info, sPtr := GetString(BytesReceived, sPtr)
@@ -116,11 +158,7 @@ func main() {
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("GAME: %s\n", info)
 
-    id1 := BytesReceived[sPtr]
-    sPtr++
-    id2 := BytesReceived[sPtr]
-    sPtr++
-    id :=  uint16(id1) | uint16(id2)<<8
+    id, sPtr := GetUInt16(BytesReceived, sPtr)
     fmt.Printf("ID: %d\n", id)
 
     fmt.Printf("PLAYERS: %d\n", BytesReceived[sPtr])
@@ -154,11 +192,7 @@ func main() {
 
         // PORT
         if edf & 0x80 != 0 {
-            s1 := BytesReceived[sPtr]
-            sPtr++
-            s2 := BytesReceived[sPtr]
-            sPtr++
-            port := uint16(s1) | uint16(s2)<<8
+            port, _ := GetUInt16(BytesReceived, sPtr)
             fmt.Printf("PORT: %d\n", port)
         }
 
@@ -177,7 +211,7 @@ func main() {
     // Get Rules
     sPtr = 5
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -191,23 +225,15 @@ func main() {
     }
 
     // Challenge number
-    i1 := BytesReceived[sPtr]
-    sPtr++
-    i2 := BytesReceived[sPtr]
-    sPtr++
-    i3 := BytesReceived[sPtr]
-    sPtr++
-    i4 := BytesReceived[sPtr]
-    sPtr++
-    chnum := uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
-    fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
+    chnum, sPtr := GetUInt32(BytesReceived, sPtr)
+    if(debug) {	fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum) }
 
     A2S_RULES[5] = byte(chnum)
     A2S_RULES[6] = byte(chnum >> 8)
     A2S_RULES[7] = byte(chnum >> 16)
     A2S_RULES[8] = byte(chnum >> 24)
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_RULES...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -223,11 +249,7 @@ func main() {
     // reset sPtr
     sPtr = 5
 
-    s1 := BytesReceived[sPtr]
-    sPtr++
-    s2 := BytesReceived[sPtr]
-    sPtr++
-    rules := uint16(s1) | uint16(s2)<<8
+    rules, sPtr := GetUInt16(BytesReceived, sPtr)
 
     if(rules > 0) {
         fmt.Println("RULE LIST:")
@@ -246,7 +268,7 @@ func main() {
     // Get Players
     sPtr = 5
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...") }
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -260,23 +282,15 @@ func main() {
     }
 
     // Challenge number
-    i1 = BytesReceived[sPtr]
-    sPtr++
-    i2 = BytesReceived[sPtr]
-    sPtr++
-    i3 = BytesReceived[sPtr]
-    sPtr++
-    i4 = BytesReceived[sPtr]
-    sPtr++
-    chnum = uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
-    fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum)
+    chnum, sPtr = GetUInt32(BytesReceived, sPtr)
+    if(debug) {	fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum) }
 
     A2S_PLAYER[5] = byte(chnum)
     A2S_PLAYER[6] = byte(chnum >> 8)
     A2S_PLAYER[7] = byte(chnum >> 16)
     A2S_PLAYER[8] = byte(chnum >> 24)
 
-    fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...")
+    if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_PLAYER...") }
 	n, BytesReceived = SendPacket(Conn, A2S_PLAYER, timeout)
 
     if BytesReceived == nil || n == 0 {
@@ -305,15 +319,7 @@ func main() {
         info, sPtr = GetString(BytesReceived, sPtr)
 
         // Score
-        i1 = BytesReceived[sPtr]
-        sPtr++
-        i2 = BytesReceived[sPtr]
-        sPtr++
-        i3 = BytesReceived[sPtr]
-        sPtr++
-        i4 = BytesReceived[sPtr]
-        sPtr++
-        score := uint32(i4)<<24 | uint32(i3)<<16 | uint32(i2)<<8 | uint32(i1)
+        score, sPtr := GetUInt32(BytesReceived, sPtr)
 
         // Duration
         b := []byte{0x00, 0x00, 0x00, 0x00}
