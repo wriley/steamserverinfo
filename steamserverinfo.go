@@ -311,6 +311,8 @@ func main() {
         fmt.Println("PLAYER LIST:");
     }
 
+	var score uint32
+
     for i := 0; i < int(players); i++ {
         // Index (this seems to always be 0, so skipping it)
         sPtr++
@@ -319,7 +321,7 @@ func main() {
         info, sPtr = GetString(BytesReceived, sPtr)
 
         // Score
-        score, sPtr := GetUInt32(BytesReceived, sPtr)
+        score, sPtr = GetUInt32(BytesReceived, sPtr)
 
         // Duration
         b := []byte{0x00, 0x00, 0x00, 0x00}
