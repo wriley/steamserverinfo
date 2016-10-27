@@ -34,10 +34,11 @@ func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) 
     ret, err := conn.Write(arr)
     if CheckError(err) {
         if(debug) {	fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret) }
-        buffer := make([]byte, 1024)
+        buffer := make([]byte, 2048)
         if(debug) {	fmt.Fprintln(os.Stderr, "Reading...") }
         conn.SetReadDeadline(time.Now().Add(timeout))
         n, err := conn.Read(buffer)
+        if(debug) {	fmt.Fprintf(os.Stderr, "Read %d bytes\n", n) }
         if CheckError(err) {
             return n, buffer
         } else {
