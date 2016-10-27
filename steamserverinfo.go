@@ -16,30 +16,41 @@ import (
 	"encoding/binary"
 	"bytes"
 	"path/filepath"
+	"encoding/hex"
 )
 
 var debug bool = false
 
-func CheckError(err error) bool {
+func CheckNoError(err error) bool {
 	if err != nil {
 		fmt.Println("Error: ", err)
-        return 1 == 0
+        return  false
 	} else {
-        return 1 == 1
+        return true
     }
+}
+
+func MyHexDump(arr []byte, s int) string {
+	var b = make([]byte, s)
+	for i := 0; i < s; i++ {
+		b[i] = arr[i]
+	}
+	return hex.Dump(b)
 }
 
 func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) {
     if(debug) {	fmt.Fprintln(os.Stderr, "Writing...") }
     ret, err := conn.Write(arr)
-    if CheckError(err) {
+	if(debug) { fmt.Fprintf(os.Stderr, MyHexDump(arr, ret)) }
+    if CheckNoError(err) {
         if(debug) {	fmt.Fprintf(os.Stderr, "Wrote %d bytes\n", ret) }
-        buffer := make([]byte, 2048)
+        buffer := make([]byte, 1500)
         if(debug) {	fmt.Fprintln(os.Stderr, "Reading...") }
         conn.SetReadDeadline(time.Now().Add(timeout))
         n, err := conn.Read(buffer)
-        if(debug) {	fmt.Fprintf(os.Stderr, "Read %d bytes\n", n) }
-        if CheckError(err) {
+        if CheckNoError(err) {
+			if(debug) {	fmt.Fprintf(os.Stderr, "Read %d bytes\n", n) }
+			if(debug) { fmt.Fprintf(os.Stderr, MyHexDump(buffer, n)) }
             return n, buffer
         } else {
             return 0, nil
@@ -117,12 +128,12 @@ func main() {
 	if len(argsWithProg) == 4 {
 		debug = true
 	}
-    seconds := 5
+    seconds := 10
     timeout := time.Duration(seconds) * time.Second
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Opening UDP connection...") }
 	Conn, err := net.DialTimeout("udp", server+":"+port, timeout)
-	if !CheckError(err) {
+	if !CheckNoError(err) {
         os.Exit(2)
     }
 
@@ -146,8 +157,10 @@ func main() {
     if(debug) {	fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4]) }
     if(debug) {	fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5]) }
 
-    sPtr := 5
-    info, sPtr := GetString(BytesReceived, sPtr)
+	var sPtr int
+	var info string
+    sPtr = 5
+    info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("NAME: %s\n", info)
 
     info, sPtr = GetString(BytesReceived, sPtr)
@@ -159,7 +172,8 @@ func main() {
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("GAME: %s\n", info)
 
-    id, sPtr := GetUInt16(BytesReceived, sPtr)
+	var id uint16
+    id, sPtr = GetUInt16(BytesReceived, sPtr)
     fmt.Printf("ID: %d\n", id)
 
     fmt.Printf("PLAYERS: %d\n", BytesReceived[sPtr])
@@ -193,7 +207,8 @@ func main() {
 
         // PORT
         if edf & 0x80 != 0 {
-            port, _ := GetUInt16(BytesReceived, sPtr)
+			var port uint16
+            port, _ = GetUInt16(BytesReceived, sPtr)
             fmt.Printf("PORT: %d\n", port)
         }
 
@@ -226,7 +241,8 @@ func main() {
     }
 
     // Challenge number
-    chnum, sPtr := GetUInt32(BytesReceived, sPtr)
+	var chnum uint32
+    chnum, sPtr = GetUInt32(BytesReceived, sPtr)
     if(debug) {	fmt.Fprintf(os.Stderr,"Challenge number: %d\n", chnum) }
 
     A2S_RULES[5] = byte(chnum)
@@ -249,8 +265,8 @@ func main() {
 
     // reset sPtr
     sPtr = 5
-
-    rules, sPtr := GetUInt16(BytesReceived, sPtr)
+	var rules uint16
+    rules, sPtr = GetUInt16(BytesReceived, sPtr)
 
     if(rules > 0) {
         fmt.Println("RULE LIST:")
