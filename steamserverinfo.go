@@ -111,6 +111,15 @@ func GetUInt32(arr []byte, index int) (uint32, int) {
     return num, index
 }
 
+func CheckHeader(hdr byte, chk byte) bool {
+	if hdr != chk {
+	    fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x%x\n", hdr, chk)
+		return false
+	} else {
+		return true
+	}
+}
+
 func main() {
 	A2S_INFO := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00}
     A2S_RULES := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x56, 0xFF, 0xFF, 0xFF, 0xFF}
@@ -148,10 +157,7 @@ func main() {
         os.Exit(2)
     }
 
-    if BytesReceived[4] != 0x49 {
-        fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x49\n", BytesReceived[4])
-        os.Exit(2)
-    }
+    if !CheckHeader(BytesReceived[4], 0x49) { os.Exit(2) }
 
     if(debug) {	fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4]) }
     if(debug) {	fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5]) }
@@ -234,10 +240,7 @@ func main() {
         os.Exit(2)
     }
 
-    if BytesReceived[4] != 0x41 {
-        fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x41\n", BytesReceived[4])
-        os.Exit(2)
-    }
+    if !CheckHeader(BytesReceived[4], 0x41) { os.Exit(2) }
 
     // Challenge number
 	var chnum uint32
@@ -257,10 +260,7 @@ func main() {
         os.Exit(2)
     }
 
-    if BytesReceived[4] != 0x45 {
-        fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x45\n", BytesReceived[4])
-        os.Exit(2)
-    }
+    if !CheckHeader(BytesReceived[4], 0x45) { os.Exit(2) }
 
     // reset sPtr
     sPtr = 5
@@ -292,10 +292,7 @@ func main() {
         os.Exit(2)
     }
 
-    if BytesReceived[4] != 0x41 {
-        fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x41\n", BytesReceived[4])
-        os.Exit(2)
-    }
+    if !CheckHeader(BytesReceived[4], 0x41) { os.Exit(2) }
 
     // Challenge number
     chnum, sPtr = GetUInt32(BytesReceived, sPtr)
@@ -314,10 +311,7 @@ func main() {
         os.Exit(2)
     }
 
-    if BytesReceived[4] != 0x44 {
-        fmt.Fprintf(os.Stderr, "Header was 0x%x instead of 0x44\n", BytesReceived[4])
-        os.Exit(2)
-    }
+    if !CheckHeader(BytesReceived[4], 0x44) { os.Exit(2) }
 
     sPtr = 5
     players := BytesReceived[sPtr]
