@@ -20,6 +20,7 @@ import (
 )
 
 var debug bool = false
+var colorize bool = false
 
 func CheckNoError(err error) bool {
 	if err != nil {
@@ -31,7 +32,7 @@ func CheckNoError(err error) bool {
 }
 
 func Colorize(s string) string {
-	return "\033[0;31m" + s + "\033[0m"
+	return "\033[1;31m" + s + "\033[0m"
 }
 
 func MyHexDump(arr []byte, s int) string {
@@ -39,7 +40,11 @@ func MyHexDump(arr []byte, s int) string {
 	for i := 0; i < s; i++ {
 		b[i] = arr[i]
 	}
-	return Colorize(hex.Dump(b))
+	if colorize {
+		return Colorize(hex.Dump(b))
+	} else {
+		return hex.Dump(b)
+	}
 }
 
 func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) {
@@ -137,8 +142,11 @@ func main() {
 
 	server := argsWithProg[1]
 	port := argsWithProg[2]
-	if len(argsWithProg) == 4 {
+	if len(argsWithProg) > 3 {
 		debug = true
+	}
+	if len(argsWithProg) > 4 {
+		colorize = true
 	}
     seconds := 5
     timeout := time.Duration(seconds) * time.Second
