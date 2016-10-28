@@ -30,12 +30,16 @@ func CheckNoError(err error) bool {
     }
 }
 
+func Colorize(s string) string {
+	return "\033[0;31m" + s + "\033[0m"
+}
+
 func MyHexDump(arr []byte, s int) string {
 	var b = make([]byte, s)
 	for i := 0; i < s; i++ {
 		b[i] = arr[i]
 	}
-	return hex.Dump(b)
+	return Colorize(hex.Dump(b))
 }
 
 func SendPacket(conn net.Conn, arr []byte, timeout time.Duration) (int, []byte) {
