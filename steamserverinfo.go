@@ -85,7 +85,6 @@ func GetString(arr []byte, index int) (string, int) {
         }
     }
     index++
-//	data = fmt.Sprintf("%q", data)
 	data = stripCtlAndExtFromBytes(data)
     return data, index
 }
@@ -128,7 +127,7 @@ func main() {
 	if len(argsWithProg) == 4 {
 		debug = true
 	}
-    seconds := 10
+    seconds := 5
     timeout := time.Duration(seconds) * time.Second
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Opening UDP connection...") }
