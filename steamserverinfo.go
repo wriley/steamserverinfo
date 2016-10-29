@@ -148,7 +148,7 @@ func main() {
 	if len(argsWithProg) > 4 {
 		colorize = true
 	}
-    seconds := 5
+    seconds := 15
     timeout := time.Duration(seconds) * time.Second
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Opening UDP connection...") }
