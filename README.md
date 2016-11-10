@@ -22,7 +22,7 @@ MAXPLAYERS: 36
 ```
 # Note:
 # any 3rd argument enables verbose output
-# if verbose then any 4th argument also enables hex dumps of packets
+# if verbose then any 4th argument enables color for hex dumps
 #
 $ steamserverinfo 173.192.105.212 2512 v c
 Opening UDP connection...
