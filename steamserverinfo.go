@@ -133,7 +133,7 @@ func main() {
 	A2S_INFO := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x54, 0x53, 0x6F, 0x75, 0x72, 0x63, 0x65, 0x20, 0x45, 0x6E, 0x67, 0x69, 0x6E, 0x65, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x00}
     A2S_RULES := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x56, 0xFF, 0xFF, 0xFF, 0xFF}
     A2S_PLAYER := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0x55, 0xFF, 0xFF, 0xFF, 0xFF}
-
+    
 	argsWithProg := os.Args
 	if len(argsWithProg) < 3 {
 		fmt.Printf("Usage: %s <server> <port>\n", filepath.Base(argsWithProg[0]))
@@ -162,8 +162,12 @@ func main() {
     // Get Info
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_INFO...") }
+    
+    start := time.Now()
 	n, BytesReceived := SendPacket(Conn, A2S_INFO, timeout)
-
+    t := time.Now()
+    elapsed1 := t.Sub(start)
+    
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
@@ -173,13 +177,13 @@ func main() {
 
     if(debug) {	fmt.Fprintf(os.Stderr, "HEADER: 0x%x\n", BytesReceived[4]) }
     if(debug) {	fmt.Fprintf(os.Stderr, "PROTOCOL: 0x%x\n", BytesReceived[5]) }
-
-	var sPtr int
+    
+    var sPtr int
 	var info string
     sPtr = 5
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("NAME: %s\n", info)
-
+    
     info, sPtr = GetString(BytesReceived, sPtr)
     fmt.Printf("MAP: %s\n", info)
 
@@ -245,7 +249,11 @@ func main() {
     sPtr = 5
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
+    
+    start = time.Now()
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
+    t = time.Now()
+    elapsed2 := t.Sub(start)
 
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
@@ -265,13 +273,21 @@ func main() {
     A2S_RULES[8] = byte(chnum >> 24)
 
     if(debug) {	fmt.Fprintln(os.Stderr, "Sending A2S_RULES...") }
+    
+    start = time.Now()
 	n, BytesReceived = SendPacket(Conn, A2S_RULES, timeout)
+    t = time.Now()
+    elapsed3 := t.Sub(start)
 
     if BytesReceived == nil || n == 0 {
         fmt.Fprintln(os.Stderr, "Received no data!")
         os.Exit(2)
     }
+    
+    elapsed := (elapsed1 + elapsed2 + elapsed3) / 3
 
+    fmt.Printf("PING: %d\n", int(elapsed) / 1000000)
+    
     if !CheckHeader(BytesReceived[4], 0x45) { os.Exit(2) }
 
     // reset sPtr
